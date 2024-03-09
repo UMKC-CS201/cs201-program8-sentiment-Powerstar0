@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-    srand(time(0));
+    srand((unsigned) time(NULL)); // Suggested by https://www.digitalocean.com/community/tutorials/random-number-generator-c-plus-plus to get more random words at a quicker interval
     vector<wordList> sentList, posList, negList;
 
     // load vectors 
