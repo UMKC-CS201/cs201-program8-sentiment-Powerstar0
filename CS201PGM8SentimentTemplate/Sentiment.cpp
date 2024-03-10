@@ -4,13 +4,52 @@
 //PRE:   accepts a string (in) and the words list
 //POST:  returns the sentiment of the word if found or the value 0 if not
 double sentimentVal(string in, vector<wordList> &words) {
-
+/* Old Search
     for (auto i : words) {
         if (i.word == in)
             return i.value;
     }
     return 0;
+*/
 
+
+/* Psuedocode provided by CHATGPT
+ * high = words.size() - 1 // Index of the last element
+low = 0
+
+while low <= high do
+    mid = low + (high - low) / 2 // Calculate the middle index
+
+    if in == words[mid].word then
+        return words[mid].value // Word found, return its value
+    else if in > words[mid].word then
+        low = mid + 1 // Update the low index to search in the right half
+    else if in < words[mid].word then
+        high = mid - 1 // Update the high index to search in the left half
+end while
+
+return 0 // Word not found, return 0
+
+ * */
+
+// Using Binary Search: Assistance from https://www.freecodecamp.org/news/binary-search-in-c-algorithm-example/
+// Initializes high and low values
+int high = words.size();
+int low = 0;
+while (low <= high) {
+    int mid = low + (high - low) / 2;
+
+    if (in == words[mid].word) {
+        return words[mid].value;
+    }
+    else if (in > words[mid].word) {
+        low = mid + 1;
+    }
+    else if (in < words[mid].word) {
+        high = mid - 1;
+    }
+}
+    return 0;
 }
 
 
@@ -19,6 +58,47 @@ double sentimentVal(string in, vector<wordList> &words) {
 void loadSentiment(vector<wordList>& sentList,
     vector<wordList>& posList,
     vector<wordList>& negList) {
+
+    /* Used ChatGPT to create Psuedocode for this function
+     *
+     * openFile("sentiment.txt", inFile) // Open the input file
+if inFile is not open
+    output "Unable to open input file"
+    return
+end if
+
+while inFile is open do
+    readLine(inFile, inRecord) // Read a line from the file
+
+    try
+        pos = findFirstComma(inRecord) // Find the position of the first comma
+
+        // Extract word and value from the record
+        tempWord.word = substring(inRecord, 0, pos)
+        tempWord.value = convertToDouble(substring(inRecord, pos + 1))
+
+        // Add the word to the sentList vector
+        sentList.push_back(tempWord)
+
+        // If positive enough, add to posList
+        if tempWord.value > 1.5 then
+            posList.push_back(tempWord)
+        // If negative enough, add to negList
+        else if tempWord.value < -1.5 then
+            negList.push_back(tempWord)
+        end if
+    catch invalid_argument
+        output "Ignoring: " + tempWord.word
+    catch all
+        output "Unknown Error - Ignoring: " + tempWord.word
+    end try
+end while
+
+closeFile(inFile) // Close the input file
+return
+     * */
+
+
     ifstream inFile;
     //open sentiment.txt
     inFile.open("sentiment.txt");
@@ -71,7 +151,31 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
                     vector<wordList>& words,               // vectors containing the word & sentiment
                     vector<wordList>& posList, 
                     vector<wordList>& negList) {
- 
+
+
+    // Given Pseudocode
+    /* SETUP inFileName as ifstream
+     * WHILE (inFILE >> origWord)
+     *  LOOP through origWord and change uppercase alpha to lowercase
+     *  SET editWord to this updated word
+     *  SET wordValue = sentimentVal(editWord)
+     *  UPDATE totalOrigSent += Value
+     *  ADD word, wordValue to vector
+     *  IF (wordValue > 1)
+     *      GET randomNegWord
+     *      ADD randomNegWord to negWords
+     *  ELSE
+     *      ADD origWord to negWords
+     *  IF (wordValue < -1)
+     *      GET randomPosWord
+     *      ADD randomPosWord & value to posWords
+     *  ELSE
+     *      ADD origWord to posWords
+     * ENDWHILE
+     * PRINT vectors
+     * */
+
+
     string inWord, newWord, punctuation;
     char newChar;
     // Create vectors for the outputs (original, negative, positive) and for the list of words changed (original for positive and negative, updated positive, updated negative)
@@ -86,7 +190,7 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
     double posWordsOldTotalOnly = 0;
 
 
-    cout << "CODE THIS\n";
+    //cout << "CODE THIS\n";
     outFile << "PROCESSING FILE: " << fileName << endl << endl;
 
     // reset all vectors & values before processing inFile
@@ -108,32 +212,38 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
                 newChar = tolower(inWord[i]);
                 newWord += newChar;
             }
+            //Store punctuation to a string that will be added later
             else {
                 punctuation += inWord[i];
             }
         }
         cout << newWord << " : " << sentimentVal(newWord, words) << endl;
         // add the 'clean' word to a temp location & add original word & sentiment value to origWords
-        string clean_word = newWord;
         wordList tempWord;
         tempWord.word = newWord;
+        // Get the word's value
         tempWord.value = sentimentVal(newWord, words);
         origWordsTotal += tempWord.value;
 
         //Word with punctuation
         newWord += punctuation;
         wordList OrigWord;
+        // Push the original word to its own vector
         OrigWord.word = newWord;
         OrigWord.value = tempWord.value;
         origWords.push_back(OrigWord);
         //CHECK TO MAKE SENTIMENT MORE NEGATIVE
         if (tempWord.value > 1) {
+            // Generate random negative word and push it to its own vector
             int random = rand() % negList.size();
             wordList random_word_neg = negList[random];
             negUpdated.push_back(random_word_neg);
+            // Add to total of each negative vector, tracking the overall score and the changed negative values and the values beforehand
+            // Push the original and changed words to seperate vectors to be displayed later
             negWordsUpdatedTotalOnly += random_word_neg.value;
             negOld.push_back(tempWord);
             negWordsOldTotalOnly += tempWord.value;
+            //Add punctuation back in to the word
             string hold = random_word_neg.word;
             hold += punctuation;
             random_word_neg.word = hold;
@@ -141,6 +251,7 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
             negWordsTotal += random_word_neg.value;
         }
         else {
+            // If word is not positive enough don't change it
             negWords.push_back(OrigWord);
             negWordsTotal += OrigWord.value;
         }
@@ -150,12 +261,16 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
 
         //CHECK TO MAKE SENTIMENT MORE POSITIVE
         if (tempWord.value < -1) {
+            // Generate random positive word and push it to its own vector
             int random = rand() % posList.size();
             wordList random_word_pos = posList[random];
             posUpdated.push_back(random_word_pos);
+            // Add to total of each positive vector, tracking the overall score and the changed positive values and the values beforehand
+            // Push the original and changed words to seperate vectors to be displayed later
             posWordsUpdatedTotalOnly += random_word_pos.value;
             posOld.push_back(tempWord);
             posWordsOldTotalOnly += tempWord.value;
+            //Add punctuation back in to the word
             string hold = random_word_pos.word;
             hold += punctuation;
             random_word_pos.word = hold;
@@ -163,6 +278,7 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
             posWordsTotal += random_word_pos.value;
         }
         else {
+            // If word is not positive enough don't change it
             posWords.push_back(OrigWord);
             posWordsTotal += OrigWord.value;
         }
@@ -187,16 +303,21 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
     outFile << endl << endl;
 
     //EDIT MORE NEGATIVE VECTOR FOR OUTPUT
+    //CHECK THAT SOMETHING HAS BEEN UPDATED BEFORE BEGINNING PRINT
+    //IF THE ORIGINAL SENTMENT & NEGATIVE SENTIMENT ARE EQUAL, PRINT "REVIEW NOT UPDATED, THE SENTIMENT REMAINS: "
     if (negWordsTotal == origWordsTotal) {
+        // If sentiment is the same
         outFile << "REVIEW NOT UPDATED TO BE MORE NEGATIVE. THE SENTIMENT REMAINS: " << origWordsTotal;
         outFile << endl << endl;
     }
     else {
+        // Output the orignal words and the negative replacements
         outFile << "WORDS UPDATED TO BE MORE NEGATIVE: " << endl;
         for (int i = 0; i < negUpdated.size(); i++) {
             outFile << "\t" << setw(12) <<  negOld[i].word  << "\t" << setw(6) << negOld[i].value << "\t" << setw(12) << negUpdated[i].word << "\t" << setw(6) << negUpdated[i].value << endl;
         }
         outFile << "TOTALS: " << setw(18) << negWordsOldTotalOnly << setw(24) << negWordsUpdatedTotalOnly << endl << endl;
+        // Output negative review
         outFile << "UPDATED REVIEW (MORE NEGATIVE): " << endl;
         int lineLength = 0;
         for (unsigned int i = 0; i < negWords.size(); i++) {
@@ -207,9 +328,8 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
             }
             outFile << negWords[i].word + " ";
         }
-        //CHECK THAT SOMETHING HAS BEEN UPDATED BEFORE BEGINNING PRINT
-        //IF THE ORIGINAL SENTMENT & NEGATIVE SENTIMENT ARE EQUAL, PRINT "REVIEW NOT UPDATED, THE SENTIMENT REMAINS: "
         outFile << endl << endl;
+        // Output new sentiment
         outFile << "UPDATED NEGATIVE SENTIMENT: " << negWordsTotal;
         outFile << endl << endl;
     }
@@ -220,15 +340,18 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
     //CHECK THAT SOMETHING HAS BEEN UPDATED BEFORE BEGINNING PRINT
     //IF THE ORIGINAL SENTMENT & NEW POSITIVE SENTIMENT ARE EQUAL, PRINT "REVIEW NOT UPDATED, THE SENTIMENT REMAINS: "
     if (posWordsTotal == origWordsTotal) {
+        // If sentiment is the same
         outFile << "REVIEW NOT UPDATED TO BE MORE POSITIVE. THE SENTIMENT REMAINS: " << origWordsTotal;
         outFile << endl << endl << endl;
     }
     else {
+        // Output original words and the positive counterparts
         outFile << "WORDS UPDATED TO BE MORE POSITIVE: " << endl;
         for (int i = 0; i < posUpdated.size(); i++) {
             outFile << "\t" << setw(12) <<  posOld[i].word << "\t" << setw(6) << posOld[i].value << "\t" << setw(12) << posUpdated[i].word << "\t" << setw(6) << posUpdated[i].value << endl;
         }
         outFile << "TOTALS: " << setw(18) << posWordsOldTotalOnly << setw(24) << posWordsUpdatedTotalOnly << endl << endl;
+        // Output positive review
         outFile << "UPDATED REVIEW (MORE POSITIVE): " << endl;
         int lineLength = 0;
         for (unsigned int i = 0; i < posWords.size(); i++) {
@@ -240,10 +363,9 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
             outFile << posWords[i].word + " ";
         }
         outFile << endl << endl;
+        // Output new sentiment
         outFile << "UPDATED POSITIVE SENTIMENT: " << posWordsTotal;
         outFile << endl << endl;
-        outFile << "WORDS UPDATED TO BE MORE POSITIVE: " << endl << endl;
-        outFile << endl << endl << endl;
     }
  
  
