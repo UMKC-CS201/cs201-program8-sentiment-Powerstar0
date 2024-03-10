@@ -72,7 +72,7 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
                     vector<wordList>& posList, 
                     vector<wordList>& negList) {
  
-    string inWord, newWord;
+    string inWord, newWord, punctuation;
     char newChar;
     // Create vectors for the outputs (original, negative, positive) and for the list of words changed (original for positive and negative, updated positive, updated negative)
     vector<wordList> origWords, negWords, posWords, negUpdated, posUpdated, negOld, posOld;
@@ -102,10 +102,14 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
         //  read char by char and only use alphabetic characters
         //  and change all uppercase to lowercase
         newWord = "";
+        punctuation = "";
         for (int i = 0, len = inWord.size(); i < len; i++) {
             if (isalpha(inWord[i])) {
                 newChar = tolower(inWord[i]);
                 newWord += newChar;
+            }
+            else {
+                punctuation += inWord[i];
             }
         }
         cout << newWord << " : " << sentimentVal(newWord, words) << endl;
@@ -115,21 +119,30 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
         tempWord.word = newWord;
         tempWord.value = sentimentVal(newWord, words);
         origWordsTotal += tempWord.value;
-        origWords.push_back(tempWord);
+
+        //Word with punctuation
+        newWord += punctuation;
+        wordList OrigWord;
+        OrigWord.word = newWord;
+        OrigWord.value = tempWord.value;
+        origWords.push_back(OrigWord);
         //CHECK TO MAKE SENTIMENT MORE NEGATIVE
         if (tempWord.value > 1) {
             int random = rand() % negList.size();
             wordList random_word_neg = negList[random];
-            negWords.push_back(random_word_neg);
-            negWordsTotal += random_word_neg.value;
             negUpdated.push_back(random_word_neg);
             negWordsUpdatedTotalOnly += random_word_neg.value;
             negOld.push_back(tempWord);
             negWordsOldTotalOnly += tempWord.value;
+            string hold = random_word_neg.word;
+            hold += punctuation;
+            random_word_neg.word = hold;
+            negWords.push_back(random_word_neg);
+            negWordsTotal += random_word_neg.value;
         }
         else {
-            negWords.push_back(tempWord);
-            negWordsTotal += tempWord.value;
+            negWords.push_back(OrigWord);
+            negWordsTotal += OrigWord.value;
         }
         //store current word before checking to replace
         //add original word or replacement to negVector
@@ -139,16 +152,19 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
         if (tempWord.value < -1) {
             int random = rand() % posList.size();
             wordList random_word_pos = posList[random];
-            posWords.push_back(random_word_pos);
-            posWordsTotal += random_word_pos.value;
             posUpdated.push_back(random_word_pos);
             posWordsUpdatedTotalOnly += random_word_pos.value;
             posOld.push_back(tempWord);
             posWordsOldTotalOnly += tempWord.value;
+            string hold = random_word_pos.word;
+            hold += punctuation;
+            random_word_pos.word = hold;
+            posWords.push_back(random_word_pos);
+            posWordsTotal += random_word_pos.value;
         }
         else {
-            posWords.push_back(tempWord);
-            posWordsTotal += tempWord.value;
+            posWords.push_back(OrigWord);
+            posWordsTotal += OrigWord.value;
         }
         //store current word before checking to replace
         //add original word or replacement to posVector
@@ -182,6 +198,7 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
         }
         outFile << "TOTALS: " << setw(18) << negWordsOldTotalOnly << setw(24) << negWordsUpdatedTotalOnly << endl << endl;
         outFile << "UPDATED REVIEW (MORE NEGATIVE): " << endl;
+        int lineLength = 0;
         for (unsigned int i = 0; i < negWords.size(); i++) {
             lineLength += negWords[i].word.length() + 1;
             if (lineLength > 80) {
@@ -213,6 +230,7 @@ void processFile(ifstream& inFile, ofstream& outFile, string fileName,
         }
         outFile << "TOTALS: " << setw(18) << posWordsOldTotalOnly << setw(24) << posWordsUpdatedTotalOnly << endl << endl;
         outFile << "UPDATED REVIEW (MORE POSITIVE): " << endl;
+        int lineLength = 0;
         for (unsigned int i = 0; i < posWords.size(); i++) {
             lineLength += posWords[i].word.length() + 1;
             if (lineLength > 80) {
